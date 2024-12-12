@@ -13,8 +13,5 @@ class Settings(BaseSettings):
     PROCESSED_DATA_DIR: str = "./processed_data"
     SERPER_API_KEY: Optional[str] = "92160b0fa55442ef5d0b36429129623d1bfc89e0"
 
-    class ConfigDict:
-        env_file = ".env"
-
 
 settings = Settings()
