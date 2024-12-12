@@ -1,4 +1,5 @@
 from langchain_community.utilities import GoogleSerperAPIWrapper
+from typing_extensions import Literal
 
 from .agent import Agent
 from .config import Settings, settings
@@ -6,19 +7,24 @@ from .config import Settings, settings
 
 class WebSearchAgent:
     def __init__(self, llm, settings: Settings = settings):
-        async def search_query(query: str) -> dict:
+        async def search_query(
+            query: str,
+            type: Literal["news", "search", "places", "images"] = "search",
+        ) -> dict:
             """
             Search for a query using GoogleSerperAPIWrapper.
 
             Args:
             query: The search query string.
+            type: The type of search to be performed, can be "news", "search", "places", or "images".
 
             Returns:
             dict: The search results.
             """
             # Perform the search
             results = await GoogleSerperAPIWrapper(
-                serper_api_key=settings.SERPER_API_KEY
+                serper_api_key=settings.SERPER_API_KEY,
+                type=type,
             ).arun(query)
 
             return results
