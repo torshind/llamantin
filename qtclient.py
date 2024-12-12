@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import sys
 import uuid
 from datetime import datetime
@@ -19,10 +20,28 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from qtclientconfig import settings
+
+
+def init_db():
+    conn = sqlite3.connect("llamantin.db")
+    cursor = conn.cursor()
+
+    # Create main table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS LLAMANTIN (
+            agent_id TEXT PRIMARY KEY
+        )
+    """)
+
+    conn.commit()
+    return conn
+
 
 class AgentWidget(QFrame):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, agent_id=None):
         super().__init__(parent)
+        self.agent_id = agent_id or str(uuid.uuid4())
         self.setFrameStyle(QFrame.Panel | QFrame.Raised)
         self.setMinimumSize(300, 400)
 
@@ -80,6 +99,75 @@ class AgentWidget(QFrame):
         # Task tracking
         self.current_task_id = None
 
+        self.init_db()
+
+    def init_db(self):
+        conn = sqlite3.connect("llamantin.db")
+        cursor = conn.cursor()
+
+        # Create table for this agent
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS '{self.agent_id}' (
+                widget_name TEXT PRIMARY KEY,
+                state TEXT
+            )
+        """)
+
+        conn.commit()
+        conn.close()
+
+    def save_state(self):
+        conn = sqlite3.connect("llamantin.db")
+        cursor = conn.cursor()
+
+        # Save agent type
+        cursor.execute(
+            f"""
+            INSERT OR REPLACE INTO '{self.agent_id}' (widget_name, state)
+            VALUES ('agent_type', ?)
+        """,
+            (self.agent_type.currentText(),),
+        )
+
+        # Save timer interval
+        cursor.execute(
+            f"""
+            INSERT OR REPLACE INTO '{self.agent_id}' (widget_name, state)
+            VALUES ('timer_interval', ?)
+        """,
+            (self.timer_interval.currentText(),),
+        )
+
+        # Save query input
+        cursor.execute(
+            f"""
+            INSERT OR REPLACE INTO '{self.agent_id}' (widget_name, state)
+            VALUES ('query_input', ?)
+        """,
+            (self.query_input.text(),),
+        )
+
+        conn.commit()
+        conn.close()
+
+    def load_state(self):
+        conn = sqlite3.connect("llamantin.db")
+        cursor = conn.cursor()
+
+        cursor.execute(f"SELECT widget_name, state FROM '{self.agent_id}'")
+        rows = cursor.fetchall()
+
+        for row in rows:
+            widget_name, state = row
+            if widget_name == "agent_type":
+                self.agent_type.setCurrentText(state)
+            elif widget_name == "timer_interval":
+                self.timer_interval.setCurrentText(state)
+            elif widget_name == "query_input":
+                self.query_input.setText(state)
+
+        conn.close()
+
     @Slot()
     def close_agent(self):
         self.websocket.close()
@@ -101,7 +189,7 @@ class AgentWidget(QFrame):
         self.results_display.append(f"Action started at: {formatted_time}")
 
         self.current_task_id = str(uuid.uuid4())
-        ws_url = QUrl(f"ws://localhost:8000/ws/{self.current_task_id}")
+        ws_url = QUrl(f"ws://{settings.SERVER_URL}/ws/{self.current_task_id}")
         self.websocket.open(ws_url)
         self.enable_button.setEnabled(False)
         self.results_display.append("Connecting...")
@@ -181,13 +269,47 @@ class MainWindow(QMainWindow):
         self.agent_count = 0
         self.max_columns = 3
 
-    def add_agent(self):
+        self.conn = init_db()
+        self.load_agents()
+
+    def add_agent(self, agent_id=None):
         row = self.agent_count // self.max_columns
         col = self.agent_count % self.max_columns
 
-        agent = AgentWidget()
+        agent = AgentWidget(agent_id=agent_id)
         self.grid.addWidget(agent, row, col)
         self.agent_count += 1
+
+        agent.load_state()
+
+        # Save agent to main table
+        cursor = self.conn.cursor()
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO LLAMANTIN (agent_id)
+            VALUES (?)
+        """,
+            (agent.agent_id,),
+        )
+        self.conn.commit()
+
+    def load_agents(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT agent_id FROM LLAMANTIN")
+        rows = cursor.fetchall()
+
+        for row in rows:
+            agent_id = row[0]
+            self.add_agent(agent_id)
+
+    def closeEvent(self, event):
+        # Save state of all agents
+        for i in range(self.grid.count()):
+            agent = self.grid.itemAt(i).widget()
+            agent.save_state()
+
+        self.conn.close()
+        event.accept()
 
 
 def main():
