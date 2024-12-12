@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from .config import Settings, settings
 from .llm import LLMProvider
-from .websearchagent import WebSearchAgent
+from .websearchagent import GoogleSearchAgent
 
 
 # Models
@@ -29,7 +29,7 @@ class AgentFactory:
         if agent_type == AgentType.WEB_SEARCH:
             # Initialize your LLM here
             llm = LLMProvider.create_llm(settings=settings)
-            return WebSearchAgent(llm=llm, settings=settings)
+            return GoogleSearchAgent(llm=llm, settings=settings)
         # Add other agent types here
         raise ValueError(f"Unknown agent type: {agent_type}")
 

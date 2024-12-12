@@ -15,6 +15,7 @@ dependencies = [
     "pyside6>=6.8.0.2",
     "uvicorn>=0.32.1",
     "websockets>=14.1",
+    "duckduckgo-search>=6.4.1",
 ]
 
 [dependency-groups]
@@ -23,3 +24,6 @@ dev = [
     "pytest>=8.3.3",
     "pytest-asyncio>=0.24.0",
 ]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "session"
