@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "ollama"
     MODEL_NAME: str = "mistral-nemo"
     MODEL_TEMPERATURE: float = 0.3
-    DATA_DIR: str = "/Users/mmansueto/Documents/"
+    DATA_DIR: str = "/Users/username/Documents/"
     PROCESSED_DATA_DIR: str = "./processed_data"
     SERPER_API_KEY: Optional[str] = "92160b0fa55442ef5d0b36429129623d1bfc89e0"
 
