@@ -9,12 +9,13 @@ from pydantic import BaseModel
 
 from .config import Settings, settings
 from .llm import LLMProvider
-from .websearchagent import GoogleSearchAgent
+from .websearchagent import DuckSearchAgent, GoogleSearchAgent
 
 
 # Models
 class AgentType(str, Enum):
-    WEB_SEARCH = "web_search"
+    GOOGLE_SEARCH = "google_search"
+    DUCK_SEARCH = "duck_search"  # Added new agent type
 
 
 class AgentRequest(BaseModel):
@@ -26,10 +27,13 @@ class AgentRequest(BaseModel):
 class AgentFactory:
     @staticmethod
     async def create_agent(agent_type: AgentType, settings: Settings = settings):
-        if agent_type == AgentType.WEB_SEARCH:
+        if agent_type == AgentType.GOOGLE_SEARCH:
             # Initialize your LLM here
             llm = LLMProvider.create_llm(settings=settings)
             return GoogleSearchAgent(llm=llm, settings=settings)
+        elif agent_type == AgentType.DUCK_SEARCH:  # Added new agent creation
+            llm = LLMProvider.create_llm(settings=settings)
+            return DuckSearchAgent(llm=llm, settings=settings)
         # Add other agent types here
         raise ValueError(f"Unknown agent type: {agent_type}")
 

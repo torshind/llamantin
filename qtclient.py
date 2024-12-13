@@ -49,7 +49,8 @@ class AgentWidget(QFrame):
 
         # Agent type selector
         self.agent_type = QComboBox()
-        self.agent_type.addItem("web_search")
+        self.agent_type.addItem("google_search")
+        self.agent_type.addItem("duck_search")
         layout.addWidget(self.agent_type)
 
         # Close button
