@@ -1,5 +1,6 @@
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from enum import Enum
 from typing import Any, Dict
 from uuid import UUID
@@ -7,6 +8,7 @@ from uuid import UUID
 from fastapi import FastAPI, WebSocket
 from pydantic import BaseModel
 
+from .collector import Collector
 from .config import Settings, settings
 from .llm import LLMProvider
 from .websearchagent import DuckSearchAgent, GoogleSearchAgent
@@ -60,9 +62,25 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
+collector = Collector(settings.DATA_DIR)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    print("Starting up...")
+    await collector.initialize_database()
+    collector.start()
+
+    yield
+
+    # Shutdown logic
+    print("Shutting down...")
+    collector.stop()
+
 
 # FastAPI app
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 
 async def process_agent_query(task_id: UUID, agent_type: AgentType, query: str):
