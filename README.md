@@ -2,3 +2,5 @@
 
 # llamantin
 AI agents made for humans
+
+<img width="1112" alt="image" src="https://github.com/user-attachments/assets/7306e296-96c8-4b2c-812d-738f8e25b2e0" />
