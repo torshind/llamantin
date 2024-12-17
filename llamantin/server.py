@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from .collector import Collector
 from .config import Settings, settings
+from .docsearchagent import DocSearchAgent
 from .llm import LLMProvider
 from .websearchagent import DuckSearchAgent, GoogleSearchAgent
 
@@ -17,7 +18,8 @@ from .websearchagent import DuckSearchAgent, GoogleSearchAgent
 # Models
 class AgentType(str, Enum):
     GOOGLE_SEARCH = "google_search"
-    DUCK_SEARCH = "duck_search"  # Added new agent type
+    DUCK_SEARCH = "duck_search"
+    DOC_SEARCH = "doc_search"
 
 
 class AgentRequest(BaseModel):
@@ -29,14 +31,13 @@ class AgentRequest(BaseModel):
 class AgentFactory:
     @staticmethod
     async def create_agent(agent_type: AgentType, settings: Settings = settings):
+        llm = LLMProvider.create_llm(settings=settings)
         if agent_type == AgentType.GOOGLE_SEARCH:
-            # Initialize your LLM here
-            llm = LLMProvider.create_llm(settings=settings)
             return GoogleSearchAgent(llm=llm, settings=settings)
-        elif agent_type == AgentType.DUCK_SEARCH:  # Added new agent creation
-            llm = LLMProvider.create_llm(settings=settings)
+        elif agent_type == AgentType.DUCK_SEARCH:
             return DuckSearchAgent(llm=llm, settings=settings)
-        # Add other agent types here
+        elif agent_type == AgentType.DOC_SEARCH:
+            return DocSearchAgent(llm=llm, settings=settings, collector=collector)
         raise ValueError(f"Unknown agent type: {agent_type}")
 
 
@@ -69,7 +70,7 @@ collector = Collector(settings.DATA_DIR)
 async def lifespan(app: FastAPI):
     # Startup logic
     print("Starting up...")
-    await collector.initialize_database()
+    collector.initialize_database_in_background()
     collector.start()
 
     yield
@@ -86,6 +87,16 @@ app = FastAPI(lifespan=lifespan)
 async def process_agent_query(task_id: UUID, agent_type: AgentType, query: str):
     print("Processing agent query")
     try:
+        if agent_type == AgentType.DOC_SEARCH and not collector.is_initialized():
+            await manager.send_update(
+                task_id,
+                {
+                    "status": "waiting",
+                    "message": "Database is initializing, please wait...",
+                },
+            )
+            return
+
         agent = await AgentFactory.create_agent(agent_type)
         result = await agent.search(query)
         await manager.send_update(task_id, {"status": "completed", "result": result})

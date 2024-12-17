@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from pydantic_settings import BaseSettings
@@ -12,6 +13,7 @@ class Settings(BaseSettings):
     DATA_DIR: str = "/Users/username/Documents/"
     PROCESSED_DATA_DIR: str = "./processed_data"
     SERPER_API_KEY: Optional[str] = "92160b0fa55442ef5d0b36429129623d1bfc89e0"
+    LOGGING_LEVEL: int = logging.DEBUG
 
 
 settings = Settings()

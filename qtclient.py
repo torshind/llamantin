@@ -51,6 +51,7 @@ class AgentWidget(QFrame):
         self.agent_type = QComboBox()
         self.agent_type.addItem("google_search")
         self.agent_type.addItem("duck_search")
+        self.agent_type.addItem("doc_search")
         layout.addWidget(self.agent_type)
 
         # Close button
@@ -230,8 +231,10 @@ class AgentWidget(QFrame):
 
         if data["status"] == "completed":
             self.results_display.append(f"Search Results:\n{data["result"]}")
+        if data["status"] == "waiting":
+            self.results_display.append(f"Message:\n{data["message"]}")
         elif data["status"] == "failed":
-            self.results_display.append(f"Error: {data['error']}")
+            self.results_display.append(f"Error:\n{data['error']}")
 
         self.enable_button.setEnabled(True)
         self.websocket.close()

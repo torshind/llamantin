@@ -3,8 +3,8 @@ import os
 
 from faiss import IndexFlatL2
 from langchain.schema import Document
-from langchain_community.vectorstores import FAISS
 from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.vectorstores import FAISS
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from unstructured.partition.auto import partition
 from watchdog.events import FileSystemEventHandler
@@ -45,6 +45,12 @@ class Collector:
             self.vector_db.save_local(folder_path=self.db_path)
             self.is_db_loaded = True
             print("Database initialized")
+
+    def initialize_database_in_background(self):
+        asyncio.create_task(self.initialize_database())
+
+    def is_initialized(self):
+        return self.is_db_loaded
 
     async def crawl_directory(self, directory: str):
         for root, _, files in os.walk(directory):

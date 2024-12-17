@@ -1,6 +1,11 @@
+import logging
+
 from .agent import Agent
 from .collector import Collector
 from .config import Settings, settings
+
+# Configure logging
+logging.basicConfig(level=settings.LOGGING_LEVEL)
 
 
 class DocSearchAgent:
@@ -28,7 +33,7 @@ class DocSearchAgent:
             doc_tuple for doc_tuple in doc_tuples if doc_tuple[1] >= self.cutoff
         ]
 
-        print(doc_tuples, flush=True)
+        logging.debug(doc_tuples)
 
         context = "\n\n".join([doc_tuple[0].page_content for doc_tuple in doc_tuples])
 
